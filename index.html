@@ -201,6 +201,14 @@
             position: relative;
             background-size: cover;
             background-position: center center;
+            transition: border 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .post.selected {
+            border-style: solid;
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(107, 255, 122, 0.1);
+            z-index: 2;
         }
 
         .post-head {
@@ -530,7 +538,7 @@
                         <div class="hint" id="hint"></div>
                     </div>
                 </div>
-                <div class="footer">press / to focus search • Esc to clear • made by Diskilt_</div>
+                <div class="footer">press / to focus search • Arrow keys to navigate • Esc to clear</div>
             </div>
 
             <div id="reader" class="reader">
@@ -588,8 +596,6 @@
             ]
         }
     </script>
-    <!--id is ENTIRELY for ease of access with ctrl + F. Do not delete.-->
-    <!-- reminder: [link to image] works, made to work as [img-center/left/right ...], for breaks use '\n‎\n', rest works just like in discord. -->
 
     <script>
         const state = {
@@ -597,7 +603,8 @@
             selectedTags: [],
             category: "",
             posts: [],
-            allTags: new Set()
+            allTags: new Set(),
+            selectedIndex: -1
         };
         const el = {
             list: document.getElementById("list"),
@@ -673,18 +680,67 @@
                 render();
             });
             document.addEventListener("keydown", (e) => {
-                if (e.key === "/") {
+                const activeReader = document.querySelector('.frame.reader-active');
+                
+                if (e.key === "/" && !activeReader) {
                     e.preventDefault();
                     el.search.focus();
                     return;
                 }
                 if (e.key === "Escape") {
-                    el.clear.click();
+                    if(activeReader) {
+                        closeReader();
+                    } else {
+                        el.clear.click();
+                    }
                     return;
                 }
-                if (e.key === "Enter") {
-                    const first = el.list.querySelector('.post');
-                    if (first) openReader(first.getAttribute('data-id'));
+                
+                if (!activeReader) {
+                    if (e.key === "ArrowDown") {
+                        e.preventDefault();
+                        const visiblePosts = el.list.querySelectorAll('.post');
+                        if (visiblePosts.length > 0) {
+                            if (state.selectedIndex < visiblePosts.length - 1) {
+                                state.selectedIndex++;
+                                updateSelection();
+                            }
+                        }
+                    }
+                    if (e.key === "ArrowUp") {
+                        e.preventDefault();
+                        const visiblePosts = el.list.querySelectorAll('.post');
+                        if (visiblePosts.length > 0) {
+                            if (state.selectedIndex > 0) {
+                                state.selectedIndex--;
+                                updateSelection();
+                            }
+                        }
+                    }
+                    if (e.key === "Enter") {
+                        if (state.selectedIndex >= 0) {
+                            const visiblePosts = el.list.querySelectorAll('.post');
+                            const selected = visiblePosts[state.selectedIndex];
+                            if (selected) {
+                                openReader(selected.getAttribute('data-id'));
+                            }
+                        } else {
+                            const first = el.list.querySelector('.post');
+                            if (first) openReader(first.getAttribute('data-id'));
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateSelection() {
+            const posts = el.list.querySelectorAll('.post');
+            posts.forEach((p, i) => {
+                if (i === state.selectedIndex) {
+                    p.classList.add('selected');
+                    p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    p.classList.remove('selected');
                 }
             });
         }
@@ -701,6 +757,8 @@
         }
 
         function render() {
+            state.selectedIndex = -1;
+            
             const items = filtered();
             el.list.innerHTML = items.map(viewPost).join("");
             el.hint.textContent = hint(items.length);
@@ -956,8 +1014,8 @@
             type();
         }
     </script>
-    <!--https://www.youtube.com/watch?v=p7YXXieghto watch it :)-->
-
 </body>
+
+</html>
 
 </html>
